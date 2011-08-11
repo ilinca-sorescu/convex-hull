@@ -1,19 +1,30 @@
 #include <vector>
 
+#define eps 0.0000001
+
+#define x coord[0]
+#define y coord[1]
+#define z coord[2]
+
+#define a coefficient[0]
+#define b coefficient[1]
+#define c coefficient[2]
+#define d coefficient[3]
+
 struct point
 {
-	double x,y,z;
+	double coord[3];
 };
 
 struct equation
 {
-	double a, b, c, d;
+	double coefficient[4];
 	equation(point p1, point p2, point p3)
 	{
 		a=p1.y*(p2.z - p3.z) + p2.y*(p3.z - p1.z) + p3.y*(p1.z - p2.z);
 		b=p1.z*(p2.x - p3.x) + p2.z*(p3.x - p1.x) + p3.z*(p1.x - p2.x);
 		c=p1.x*(p2.y - p3.y) + p2.x*(p3.y - p1.y) + p3.x*(p1.y - p2.y);
-		d=p1.x*(p2.y2*p3.z - p3.y*p2.z) + p2.x*(p3.y*p1.z - p1.y*p3.z) + p3.x*(p1.y*p2.z - p2.y*p1.z);
+		d=p1.x*(p2.y*p3.z - p3.y*p2.z) + p2.x*(p3.y*p1.z - p1.y*p3.z) + p3.x*(p1.y*p2.z - p2.y*p1.z);
 		d*=-1;
 	}
 };
@@ -27,7 +38,8 @@ struct face
 	edge *e;
 	face ()
 	{
-		equ=e=NULL;
+		equ=NULL;
+    e=NULL;
 	}
 };
 
@@ -38,7 +50,9 @@ struct edge
 	face *f;
 	edge ()
 	{
-		origin=next=prev=tewin=face=NULL;
+		origin=NULL;
+    next=prev=twin=NULL;
+    f=NULL;
 	}
 };
 
@@ -48,15 +62,14 @@ struct vertex
 	edge *e;
 	vertex ()
 	{
-		p=e=NULL;
+		p=NULL;
+    e=NULL;
 	}
 };
 
 class doublyConnectedEdgeList
 {
 	public:
-		doublyConnectedEdgeList();
-		~doublyConnectedEdgeList();
 		std::vector<face*> f;
 		std::vector<vertex*> v;	
 };
@@ -64,15 +77,17 @@ class doublyConnectedEdgeList
 class ConvexHull
 {
 	public:
-		ConvexHull();
-		ConvexHull(int, const point*);
-		~ConvexHull();
-		void setPoints(int , const point*);
-		doublyConnectedEdgeList getConvexHull();
-	private:
+		ConvexHull(int, point*);
+		void setPoints(int, point*);
+		doublyConnectedEdgeList getConvexHull();    
+  protected:
+    void computeTetrahedon();
+    void addFace(edge*, vertex*);
+    bool collinear(point, point, point);
+    bool coplanar(point, point, point, point);
 		void computeConvexHull();
-		const point* p;		
+		point* p;		
 		int nrPoints;
+    std::vector<bool> viz;
 		doublyConnectedEdgeList ch;
-}
-
+};
