@@ -77,7 +77,8 @@ class doublyConnectedEdgeList
 class ConvexHull
 {
 	public:
-		ConvexHull(int, point*);
+		ConvexHull();
+    ConvexHull(int, point*);
 		void setPoints(int, point*);
 		doublyConnectedEdgeList getConvexHull();    
   protected:

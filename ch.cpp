@@ -2,6 +2,11 @@
 #include <cstdlib>
 #include <cstdio>
 
+
+ConvexHull::ConvexHull()
+{
+}
+
 void ConvexHull::setPoints(int n, point* p)
 {
 	this->p=p;
@@ -39,8 +44,7 @@ bool ConvexHull::collinear(point p1, point p2, point p3)
 bool ConvexHull::coplanar(point p1, point p2, point p3, point p4)
 {
   equation coef(p1, p2, p3);
-  double eq;
-  eq=coef.a*p4.x+coef.b*p4.y+coef.c+p4.z+coef.d;
+  double eq=coef.a*p4.x+coef.b*p4.y+coef.c*p4.z+coef.d;
   if (eq >= -eps && eq <= eps) return true;
   return false;
 }
@@ -147,8 +151,8 @@ void ConvexHull::computeConvexHull()
 	}*/
 }
 
-int main()
+/*int main()
 {
 	
 	return 0;
-}
+}*/
