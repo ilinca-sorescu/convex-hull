@@ -12,6 +12,7 @@ void ConvexHull::setPoints(int n, point* p)
 	this->p=p;
 	this->nrPoints=n;
   this->viz.resize(n+1);
+  this->conflictP.resize(n+1);
 }
 
 ConvexHull::ConvexHull(int n, point* p)
@@ -23,8 +24,8 @@ bool ConvexHull::collinear(point p1, point p2, point p3)
 {
   double eq, t;
   int i;
-
-  for (i=0; i != 3 && p2.coord[i] == p1.coord[i]; ++i);
+  
+  for (i=0; (i != 3) && (p2.coord[i] == p1.coord[i]); ++i) ;
   if (i == 3)//duplicates!
   {
     fprintf(stderr, "ERROR: Duplicates!");
@@ -133,6 +134,59 @@ void ConvexHull::computeTetrahedon()
 	delete &e[0];
 }
 
+inline int ConvexHull::sgn(double v)
+{
+  if (v >= -eps && v <= eps)
+  {
+    if (this->exteriorSgn == -1) return 1;
+    return -1;
+  }
+  if (v < 0) return -1;
+  return 1;
+}
+
+int ConvexHull::computeInteriorSgn()
+{
+  long double s[3];
+  point m;
+  int i, j;
+  
+  s[0]=s[1]=s[2]=0;
+  
+  for (i=1; i <= this->nrPoints; ++i)
+      for (j=0; j != 3; ++j)
+        s[j]+=this->p[i].coord[j];
+
+  for (i=0; i != 3; ++i)
+    m.coord[i]=s[i]/this->nrPoints;
+
+  equation coef=*this->ch.f[0]->equ;
+  return sgn(coef.a*m.x+coef.b*m.y+coef.c*m.z+coef.d);
+}
+
+void ConvexHull::conflictTetrahedon()
+{
+  this->exteriorSgn = computeInteriorSgn()*(-1);
+  
+  int i, j;
+  equation e;
+
+  for (i=0; i != this->nrPoints; ++i)
+  {
+    if (this->viz[i] == true) continue;
+    for (j=0; j != (int)this->ch.f.size(); ++j)
+    {
+       e=*this->ch.f[j]->equ;
+       if (sgn (e.a*this->p[j].x + e.b*this->p[j].y + e.c*this->p[j].z + e.d) == this->exteriorSgn) 
+       {
+         //face j conflicts with point i
+         this->ch.f[j]->conflict.push_back(i); 
+         this->conflictP[i].push_back(j);
+       }
+    }
+  }
+}
+
 /*ConvexHull::addPoint(point P)
 {
 	deleteConflicts();
@@ -142,8 +196,8 @@ void ConvexHull::computeTetrahedon()
 void ConvexHull::computeConvexHull()
 {
 	computeTetrahedon();
-/*	conflictTetrahedon();
-	int i;
+	conflictTetrahedon();
+/*	int i;
 	for(i=1; i <= this->nrPoints; ++i)
 	{
 		if(this->viz[i] == true) continue;

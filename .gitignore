@@ -1,3 +1,5 @@
 .*.swp
 *.o
 ch
+ch-test
+log.txt

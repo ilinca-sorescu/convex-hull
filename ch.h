@@ -27,6 +27,9 @@ struct equation
 		d=p1.x*(p2.y*p3.z - p3.y*p2.z) + p2.x*(p3.y*p1.z - p1.y*p3.z) + p3.x*(p1.y*p2.z - p2.y*p1.z);
 		d*=-1;
 	}
+  equation()
+  {
+  }
 };
 
 struct edge;
@@ -36,7 +39,8 @@ struct face
 {
 	equation *equ;
 	edge *e;
-	face ()
+  std::vector<int> conflict;
+  face ()
 	{
 		equ=NULL;
     e=NULL;
@@ -80,15 +84,26 @@ class ConvexHull
 		ConvexHull();
     ConvexHull(int, point*);
 		void setPoints(int, point*);
-		doublyConnectedEdgeList getConvexHull();    
+		doublyConnectedEdgeList getConvexHull();
+
   protected:
     void computeTetrahedon();
     void addFace(edge*, vertex*);
     bool collinear(point, point, point);
     bool coplanar(point, point, point, point);
 		void computeConvexHull();
-		point* p;		
+    int computeInteriorSgn();
+    void conflictTetrahedon();
+    int sgn(double);
+
+    point* p;		
 		int nrPoints;
+    
     std::vector<bool> viz;
-		doublyConnectedEdgeList ch;
+		
+    doublyConnectedEdgeList ch;
+    
+    int exteriorSgn;
+
+    std::vector< std::vector<int> > conflictP;
 };
