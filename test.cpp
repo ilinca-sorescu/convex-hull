@@ -2,6 +2,15 @@
 #include <cassert>
 #include <cstdio>
 
+#define x coord[0]
+#define y coord[1]
+#define z coord[2]
+
+#define a coefficient[0]
+#define b coefficient[1]
+#define c coefficient[2]
+#define d coefficient[3]
+
 inline void TestConvexHull::print(FILE* out, bool value, int k=0)
 {
   if (k != 0)
@@ -242,3 +251,13 @@ int main()
   t.run_tests();
   return 0;
 }
+
+#undef x
+#undef y
+#undef z
+
+#undef a
+#undef b
+#undef c
+#undef d
+

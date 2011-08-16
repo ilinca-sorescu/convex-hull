@@ -66,11 +66,11 @@ struct edge
 struct vertex
 {
 	point *p;
-	edge *e;
-	vertex ()
+	int num;
+  vertex ()
 	{
 		p=NULL;
-    e=NULL;
+    num=0;
 	}
 };
 
@@ -96,14 +96,14 @@ class ConvexHull
 
   protected:
     void computeTetrahedon();
-    void addFace(edge*, vertex*);
+    void addFace(edge*, vertex*, edge*);
     bool collinear(point, point, point);
     bool coplanar(point, point, point, point);
 		void computeConvexHull();
     int computeInteriorSgn();
     void conflictTetrahedon();
     int sgn(double);
-    void addPoint(point);
+    void addPoint(int);
 
     point* p;		
 		int nrPoints;
@@ -116,3 +116,14 @@ class ConvexHull
 
     std::vector< std::vector<int> > conflictP;
 };
+
+#undef x
+#undef y
+#undef z
+
+#undef a
+#undef b
+#undef c
+#undef d
+
+

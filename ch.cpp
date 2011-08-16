@@ -1,6 +1,15 @@
 #include "ch.h"
 #include <cstdlib>
 
+#define x coord[0]
+#define y coord[1]
+#define z coord[2]
+
+#define a coefficient[0]
+#define b coefficient[1]
+#define c coefficient[2]
+#define d coefficient[3]
+
 void doublyConnectedEdgeList::clean_up()
 {
   int i;
@@ -90,7 +99,7 @@ bool ConvexHull::coplanar(point p1, point p2, point p3, point p4)
   return false;
 }
 
-void ConvexHull::addFace(edge *e, vertex *v)
+void ConvexHull::addFace(edge *e, vertex *v, edge *eprev)
 {
   e->twin=new edge;
   e->twin->twin=e;
@@ -116,12 +125,8 @@ void ConvexHull::addFace(edge *e, vertex *v)
   e1->origin=e->origin;
   e2->origin=v;
 
-  v->e=e2; 
-
-  if(e->prev->twin != NULL)
-    e1->twin=e->prev->twin->prev;
-  if(e->next->twin != NULL)
-    e2->twin=e->next->twin->next;
+  if(eprev != NULL)
+    e1->twin=eprev->twin->prev;
 }
 
 void ConvexHull::computeTetrahedon()
@@ -161,7 +166,6 @@ void ConvexHull::computeTetrahedon()
 	for (i=1; i <= 3; ++i)
 	{
 		e[i]->origin=v[i];
-		v[i]->e=e[i];
 		e[i]->f=newface;
 	}
 
@@ -172,9 +176,13 @@ void ConvexHull::computeTetrahedon()
 	for (i=1; i <= 4; ++i)
 		this->ch.v.push_back(v[i]);
 
-  addFace(e[3], v[4]);
-  addFace(e[2], v[4]);
-  addFace(e[1], v[4]);
+  addFace(e[1], v[4], NULL);
+  addFace(e[2], v[4], e[1]);
+  addFace(e[3], v[4], e[2]);
+
+  e[1]->twin->next->twin=e[3]->twin->prev;
+
+  v[1]->num=v[2]->num=v[3]->num=v[4]->num=3;
 }
 
 inline int ConvexHull::sgn(double v)
@@ -231,8 +239,23 @@ void ConvexHull::conflictTetrahedon()
   }
 }
 
-void ConvexHull::addPoint(point P)
+void ConvexHull::addPoint(int ordP)
 {
+/*  vertex* newvertex=new vertex;
+  newvertex->p=this->p[ordP];
+
+  std::vector<std::pair <edge*, face*> > H;
+  int i;
+  face* conflictFace;
+  edge* currentEdge;
+  for (i=0; i != (int)this->conflictP[ordP]; ++i)
+  {
+    conflictFace=this->ch->f[conflictP[ordP][i]];
+    currentEdge=conflictFace->e;
+    do
+    {
+    } while ();
+  }*/
 }
 
 void ConvexHull::computeConvexHull()
@@ -243,7 +266,7 @@ void ConvexHull::computeConvexHull()
 	for(i=1; i <= this->nrPoints; ++i)
 	{
 		if(this->viz[i] == true) continue;
-		addPoint(this->p[i]);
+		addPoint(i);
 	}
 }
 
@@ -252,3 +275,14 @@ void ConvexHull::computeConvexHull()
 	
 	return 0;
 }*/
+
+#undef x
+#undef y
+#undef z
+
+#undef a
+#undef b
+#undef c
+#undef d
+
+
