@@ -20,7 +20,8 @@ struct point
 struct equation
 {
 	double coefficient[4];
-	equation(point p1, point p2, point p3)
+	
+  equation(point p1, point p2, point p3)
 	{
 		a=p1.y*(p2.z - p3.z) + p2.y*(p3.z - p1.z) + p3.y*(p1.z - p2.z);
 		b=p1.z*(p2.x - p3.x) + p2.z*(p3.x - p1.x) + p3.z*(p1.x - p2.x);
@@ -28,6 +29,7 @@ struct equation
 		d=p1.x*(p2.y*p3.z - p3.y*p2.z) + p2.x*(p3.y*p1.z - p1.y*p3.z) + p3.x*(p1.y*p2.z - p2.y*p1.z);
 		d*=-1;
 	}
+  
   equation()
   {
   }
@@ -75,7 +77,10 @@ struct vertex
 class doublyConnectedEdgeList
 {
 	public:
-		std::vector<face*> f;
+	  ~doublyConnectedEdgeList();
+    void clean_up();
+
+    std::vector<face*> f;
 		std::vector<vertex*> v;	
 };
 
@@ -84,8 +89,10 @@ class ConvexHull
 	public:
 		ConvexHull();
     ConvexHull(int, point*);
-		void setPoints(int, point*);
-		doublyConnectedEdgeList getConvexHull();
+		~ConvexHull();
+    void setPoints(int, point*);
+    doublyConnectedEdgeList getConvexHull();
+    void clean_up();
 
   protected:
     void computeTetrahedon();
@@ -96,6 +103,7 @@ class ConvexHull
     int computeInteriorSgn();
     void conflictTetrahedon();
     int sgn(double);
+    void addPoint(point);
 
     point* p;		
 		int nrPoints;

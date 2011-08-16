@@ -1,9 +1,41 @@
 #include "ch.h"
 #include <cstdlib>
 
-
-ConvexHull::ConvexHull()
+void doublyConnectedEdgeList::clean_up()
 {
+  int i;
+  edge *current_edge;
+  for(i=0; i != (int)this->f.size(); ++i)
+  {
+    current_edge=this->f[i]->e;
+    do
+    {
+      current_edge=current_edge->next;
+      delete current_edge->prev;
+    } while (current_edge != this->f[i]->e);
+  }
+  this->f.resize(0);
+  this->v.resize(0);
+}
+
+void ConvexHull::clean_up()
+{
+    if (this->p == NULL) return;
+    delete [] this->p;
+    this->p=NULL;
+    this->viz.resize(0);
+    this->conflictP.resize(0);
+    this->ch.clean_up();
+}
+
+doublyConnectedEdgeList::~doublyConnectedEdgeList()
+{
+  clean_up();
+}
+
+ConvexHull::~ConvexHull()
+{
+  clean_up();
 }
 
 void ConvexHull::setPoints(int n, point* p)
@@ -17,6 +49,11 @@ void ConvexHull::setPoints(int n, point* p)
 ConvexHull::ConvexHull(int n, point* p)
 {
 	setPoints(n, p);
+}
+
+ConvexHull::ConvexHull()
+{
+  this->p=NULL;
 }
 
 bool ConvexHull::collinear(point p1, point p2, point p3)
@@ -188,22 +225,20 @@ void ConvexHull::conflictTetrahedon()
   }
 }
 
-/*ConvexHull::addPoint(point P)
+void ConvexHull::addPoint(point P)
 {
-	deleteConflicts();
-	addAllFaces();
-}*/
+}
 
 void ConvexHull::computeConvexHull()
 {
 	computeTetrahedon();
 	conflictTetrahedon();
-/*	int i;
+	int i;
 	for(i=1; i <= this->nrPoints; ++i)
 	{
 		if(this->viz[i] == true) continue;
 		addPoint(this->p[i]);
-	}*/
+	}
 }
 
 /*int main()

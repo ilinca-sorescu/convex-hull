@@ -10,7 +10,7 @@ $(PROGRAM): $(OBJ)
 	g++ $(OBJ) -o $(PROGRAM)
 
 %.o : %.cpp
-	g++ -W -Wall -O2 -static -c $< -o $@
+	g++ -g3 -W -Wall -c $< -o $@
 
 build_test: $(TEST_PROGRAM)
 
