@@ -1,4 +1,5 @@
 #include <vector>
+#include <cstdio>
 
 #define eps 0.0000001
 

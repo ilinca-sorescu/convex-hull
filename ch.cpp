@@ -1,6 +1,5 @@
 #include "ch.h"
 #include <cstdlib>
-#include <cstdio>
 
 
 ConvexHull::ConvexHull()
@@ -11,7 +10,7 @@ void ConvexHull::setPoints(int n, point* p)
 {
 	this->p=p;
 	this->nrPoints=n;
-  this->viz.resize(n+1);
+  this->viz.resize(n+1, 0);
   this->conflictP.resize(n+1);
 }
 
@@ -132,6 +131,7 @@ void ConvexHull::computeTetrahedon()
 
   delete &v[0];
 	delete &e[0];
+
 }
 
 inline int ConvexHull::sgn(double v)
@@ -154,6 +154,7 @@ int ConvexHull::computeInteriorSgn()
   s[0]=s[1]=s[2]=0;
   
   for (i=1; i <= this->nrPoints; ++i)
+    if (this->viz[i] == true)
       for (j=0; j != 3; ++j)
         s[j]+=this->p[i].coord[j];
 
@@ -171,13 +172,13 @@ void ConvexHull::conflictTetrahedon()
   int i, j;
   equation e;
 
-  for (i=0; i != this->nrPoints; ++i)
+  for (i=1; i <= this->nrPoints; ++i)
   {
     if (this->viz[i] == true) continue;
     for (j=0; j != (int)this->ch.f.size(); ++j)
     {
        e=*this->ch.f[j]->equ;
-       if (sgn (e.a*this->p[j].x + e.b*this->p[j].y + e.c*this->p[j].z + e.d) == this->exteriorSgn) 
+       if (sgn (e.a*this->p[i].x + e.b*this->p[i].y + e.c*this->p[i].z + e.d) == this->exteriorSgn) 
        {
          //face j conflicts with point i
          this->ch.f[j]->conflict.push_back(i); 

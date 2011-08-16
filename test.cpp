@@ -94,7 +94,6 @@ inline void TestConvexHull::readPoints(FILE* in)
 
       for (j=1; j <= n; ++j)
         assert (fscanf(in, "%lf%lf%lf", &p[j].x, &p[j].y, &p[j].z) != EOF);
-
       this->setPoints(n, p);
 }
 
@@ -141,6 +140,9 @@ void TestConvexHull::test_computeTetrahedon()
       print (out, ok == true);
       
       delete [] this->p; 
+      this->viz.resize(0);
+      this->ch.v.resize(0);
+      this->ch.f.resize(0);
   }
   fclose(in);
   fclose(out);
@@ -154,8 +156,11 @@ void TestConvexHull::test_conflictTetrahedon()
   fprintf (stderr, "ConflictTetrahedon:\n");
 
 	FILE *in, *out;
-	int T, i, j, k, pp, ff, n;
+	int T, i, j, k, n, num, pj, fj;
   bool ok; 
+
+  std::vector<int>pp;
+  std::vector<int>ff;
 	
   in = fopen("conflictTetrahedon/tests.txt", "r");
 	out = fopen("conflictTetrahedon/log.txt", "w");
@@ -165,30 +170,52 @@ void TestConvexHull::test_conflictTetrahedon()
 	{
     readPoints(in);
 
-    fprintf(stderr, "#%d:\n", i);
-    fprintf(out, "#%d: ", i);
+    this->computeTetrahedon();
+    this->conflictTetrahedon();
+
+    fprintf(stderr, "#%d: ", i);
+    fprintf(out, "#%d:\n", i);
    
-    fscanf(in, "%d", &n);
+    assert(fscanf(in, "%d", &n) != EOF);
+
+    for(j=1; j <= n; ++j)
+    {
+      assert(fscanf(in, "%d %d", &pj, &fj) != EOF);
+      pp.push_back(pj);
+      ff.push_back(fj);
+    }
 
     ok=true; 
-    for(j=1; ok && j <= this->nrPoints; ++j)
-      for(k=0; ok && k != (int)this->conflictP[j].size(); ++k, --n)
+    num=0;
+    for(j=1; j <= this->nrPoints; ++j)
+      for(k=0; k != (int)this->conflictP[j].size(); ++k, ++num)
       {
-        fscanf(in, "%d %d", &pp, &ff);
-        
-        if (n < 0)
+       
+        fprintf(out, "point: %d face: %d\n", j, this->conflictP[j][k]);
+
+        if (num >= n)
         {
           ok=false;
           continue;
         }
 
-        fprintf(stderr, "point: %d face: %d\n", j, k);
-
-        if (pp != j || ff != this->conflictP[j][k])
+        if (pp[num] != j || ff[num] != this->conflictP[j][k])
           ok=false;
-      }  
+      } 
+
+    if (n != num) 
+        ok=false; 
 
     print(out, ok);
+ 
+    pp.resize(0);
+    ff.resize(0);
+
+    delete [] this->p;
+    this->viz.resize(0);
+    this->ch.v.resize(0);
+    this->ch.f.resize(0);
+    this->conflictP.resize(0);
   }
 
   fclose(in);
