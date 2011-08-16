@@ -14,6 +14,10 @@ void doublyConnectedEdgeList::clean_up()
       delete current_edge->prev;
     } while (current_edge != this->f[i]->e);
   }
+  for (i=0; i != (int)this->f.size(); ++i)
+    delete this->f[i];
+  for (i=0; i != (int)this->v.size(); ++i)
+    delete this->v[i];
   this->f.resize(0);
   this->v.resize(0);
 }
@@ -122,53 +126,55 @@ void ConvexHull::addFace(edge *e, vertex *v)
 
 void ConvexHull::computeTetrahedon()
 {
-	vertex *v=new vertex[5];
-	v[1].p=&this->p[1];
-	v[2].p=&this->p[2];
+	vertex *v[5];
+  int i;
+	for (i=1; i <= 4; ++i)
+    v[i]=new vertex;
+  
+  v[1]->p=&this->p[1];
+	v[2]->p=&this->p[2];
 	this->viz[1]=viz[2]=true;
-	
-	int i=3;
+
+	i=3;
 	while (collinear(this->p[1], this->p[2], this->p[i])) ++i;
-	v[3].p=&this->p[i];
+	v[3]->p=&this->p[i];
 	this->viz[i]=true;
 
 	int j=i+1;
 	while (coplanar(this->p[1], this->p[2], this->p[i], this->p[j])) ++j;
-	v[4].p=&this->p[j];
+	v[4]->p=&this->p[j];
 	this->viz[j]=true;
 
-	edge *e=new edge [4];
+  edge *e[4];
+  for (i=1; i <= 3; i++)
+    e[i]=new edge;
 	face *newface=new face;
 
-	e[1].next=&e[2];
-	e[2].next=&e[3];
-	e[3].next=&e[1];
+	e[1]->next=e[2];
+	e[2]->next=e[3];
+	e[3]->next=e[1];
 
-	e[1].prev=&e[3];
-	e[2].prev=&e[1];
-	e[3].prev=&e[2];
+	e[1]->prev=e[3];
+	e[2]->prev=e[1];
+	e[3]->prev=e[2];
 
 	for (i=1; i <= 3; ++i)
 	{
-		e[i].origin=&v[i];
-		v[i].e=&e[i];
-		e[i].f=newface;
+		e[i]->origin=v[i];
+		v[i]->e=e[i];
+		e[i]->f=newface;
 	}
 
-	newface->equ=new equation(*v[1].p, *v[2].p, *v[3].p);
-	newface->e=&e[1];
+	newface->equ=new equation(*v[1]->p, *v[2]->p, *v[3]->p);
+	newface->e=e[1];
 	this->ch.f.push_back(newface);
 
 	for (i=1; i <= 4; ++i)
-		this->ch.v.push_back(&v[i]);
+		this->ch.v.push_back(v[i]);
 
-  addFace(&e[3], &v[4]);
-  addFace(&e[2], &v[4]);
-  addFace(&e[1], &v[4]);
-
-  delete &v[0];
-	delete &e[0];
-
+  addFace(e[3], v[4]);
+  addFace(e[2], v[4]);
+  addFace(e[1], v[4]);
 }
 
 inline int ConvexHull::sgn(double v)
