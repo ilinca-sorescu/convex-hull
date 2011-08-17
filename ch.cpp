@@ -1,5 +1,7 @@
 #include "ch.h"
 #include <cstdlib>
+#include <algorithm>
+#include <set>
 
 #define x coord[0]
 #define y coord[1]
@@ -110,6 +112,7 @@ void ConvexHull::addFace(edge *e, vertex *v, edge *eprev)
   newface->e=e->twin;
   e->twin->f=newface;
   this->ch.f.push_back(newface);
+  newface->nord=this->ch.f.size()-1;
 
   edge *e1=new edge, *e2=new edge;
   e1->prev=e->twin;
@@ -124,6 +127,10 @@ void ConvexHull::addFace(edge *e, vertex *v, edge *eprev)
 
   e1->origin=e->origin;
   e2->origin=v;
+
+  ++e->twin->origin->num;
+  ++e1->origin->num;
+  ++e2->origin->num;
 
   if(eprev != NULL)
     e1->twin=eprev->twin->prev;
@@ -172,17 +179,21 @@ void ConvexHull::computeTetrahedon()
 	newface->equ=new equation(*v[1]->p, *v[2]->p, *v[3]->p);
 	newface->e=e[1];
 	this->ch.f.push_back(newface);
+  newface->nord=this->ch.f.size()-1;
 
 	for (i=1; i <= 4; ++i)
+  {
 		this->ch.v.push_back(v[i]);
+    v[i]->nord=this->ch.v.size()-1;
+  }
+
+  v[1]->num=v[2]->num=v[3]->num=1;
 
   addFace(e[1], v[4], NULL);
   addFace(e[2], v[4], e[1]);
   addFace(e[3], v[4], e[2]);
 
   e[1]->twin->next->twin=e[3]->twin->prev;
-
-  v[1]->num=v[2]->num=v[3]->num=v[4]->num=3;
 }
 
 inline int ConvexHull::sgn(double v)
@@ -239,23 +250,130 @@ void ConvexHull::conflictTetrahedon()
   }
 }
 
+typedef std::pair <vertex*, std::pair<edge*, face*> > horizon;
+//origin of the (external)edge, (external)horizon edge 
+
+int find(std::vector <horizon> H, vertex* value)
+{
+  int i, s;
+  for (s=1; s < (int)H.size(); s <<= 1);
+  for (i=0; s; s >>= 1)
+    if (i+s < (int)H.size() && H[i+s].first <= value)
+      i+=s;
+  return i;
+}
+
+void ConvexHull::eraseEdge(edge* E)
+{
+  --E->origin->num;
+  if (E->origin->num == 0)
+    this->ch.v[E->origin->nord]=NULL;
+  delete E;
+}
+
+void ConvexHull::eraseFace(face* F)
+{
+  this->ch.f[F->nord]=NULL;
+  delete F;
+}
+
 void ConvexHull::addPoint(int ordP)
 {
-/*  vertex* newvertex=new vertex;
-  newvertex->p=this->p[ordP];
-
-  std::vector<std::pair <edge*, face*> > H;
-  int i;
+  //1.find ordered horizon ----------------------------------------------
+  
+  std::vector<horizon> H, Ho;
+  int i, pos;
+  double r;
   face* conflictFace;
   edge* currentEdge;
-  for (i=0; i != (int)this->conflictP[ordP]; ++i)
+  equation* equ;
+
+  for (i=0; i != (int)this->conflictP[ordP].size(); ++i)
   {
-    conflictFace=this->ch->f[conflictP[ordP][i]];
+    conflictFace=this->ch.f[conflictP[ordP][i]];
     currentEdge=conflictFace->e;
     do
     {
-    } while ();
-  }*/
+      equ=currentEdge->twin->f->equ; 
+      if (sgn(equ->a*this->p[ordP].x + equ->b*this->p[ordP].y + equ->c*this->p[ordP].z + equ->d) != this->exteriorSgn)
+        //currentEdge->twin->f is not visible from point this->p[ordP]
+        H.push_back(std::make_pair(currentEdge->twin->origin, std::make_pair(currentEdge->twin, currentEdge->f)));
+      eraseEdge(currentEdge);
+      currentEdge=currentEdge->next;
+    } while (currentEdge != conflictFace->e);
+  }
+  
+  std::sort(H.begin(), H.end());
+  pos=0;
+  do
+  {
+    Ho.push_back(H[pos]);
+    pos=find(H, Ho[Ho.size()-1].second.first->next->origin);   
+  } while (pos != 0);
+
+  //2.add faces, create new conflicts -----------------------------------
+
+  vertex* newvertex=new vertex;
+  newvertex->p=&this->p[ordP];
+  this->ch.v.push_back(newvertex);  
+  newvertex->nord=this->ch.v.size()-1;
+
+  edge* Ei;
+  edge* it;
+  std::set<int> conf;
+  std::vector<int>::iterator c;
+  std::set<int>::iterator setit;
+
+  for (i=0; i != (int)Ho.size(); ++i)
+  {
+    Ei=Ho[i].second.first;
+
+    // --- add new face
+    if (i)
+      addFace(Ei, newvertex, Ho[i-1].second.first);
+    else
+      addFace(Ei, newvertex, NULL);
+
+    // --- test coplanarity (this->p[ordP] in Ei->f)
+    equ=Ei->f->equ;
+    r=equ->a*this->p[ordP].x + equ->b*this->p[ordP].y + equ->c*this->p[ordP].z + equ->d;
+    if (r >= -eps && r <= eps)
+    {
+      //delete new face
+      eraseFace(Ei->twin->f);
+   
+      //new links
+      Ei->next->prev=Ei->twin->prev;
+      Ei->twin->prev->next=Ei->next;
+      Ei->prev->next=Ei->twin->next;
+      Ei->twin->next->prev=Ei->prev;
+      
+      //reset face links
+      for (it=Ei->twin->next; it != Ei->next; it=it->next)
+        it->f=Ei->f;
+
+      //delete Ei and Ei->twin
+      eraseEdge(Ei);
+      eraseEdge(Ei->twin);
+    }
+    else
+    {
+      //find new face's conflicts
+      for (c=Ei->f->conflict.begin(); c != Ei->f->conflict.end(); ++c)
+        conf.insert(*c);
+      for (c=Ho[i].second.second->conflict.begin(); c != Ho[i].second.second->conflict.end(); ++c)
+        conf.insert(*c);
+      for (setit=conf.begin(); setit != conf.end(); ++setit)
+        Ei->twin->f->conflict.push_back(*setit);
+      conf.clear();
+    }
+    eraseFace(Ho[i].second.second);
+  }
+  Ho[0].second.first->twin->next->twin=Ho[Ho.size()-1].second.first->twin->prev;
+
+  //3.clean up ----------------------------------------------------------
+  
+  this->conflictP[ordP].resize(0);  
 }
 
 void ConvexHull::computeConvexHull()
@@ -268,6 +386,33 @@ void ConvexHull::computeConvexHull()
 		if(this->viz[i] == true) continue;
 		addPoint(i);
 	}
+}
+
+doublyConnectedEdgeList ConvexHull::getConvexHull(int n, point* p)
+{
+  setPoints(n, p);
+  computeConvexHull();
+
+  //remove NULL
+  int i;
+  std::vector <face*> faux;
+  std::vector <vertex*> vaux;
+  for (i=0; i != (int)this->ch.f.size(); ++i)  
+    if (this->ch.f[i] != NULL)
+      faux.push_back(this->ch.f[i]);    
+  for (i=0; i != (int)this->ch.v.size(); ++i)
+    if (this->ch.v[i] != NULL)
+      vaux.push_back(this->ch.v[i]);
+  this->ch.f=faux;
+  this->ch.v=vaux;
+
+  //reset nord
+  for (i=0; i != (int)faux.size(); ++i) 
+    faux[i]->nord=i;
+  for (i=0; i != (int)vaux.size(); ++i)
+    vaux[i]->nord=i;
+
+  return this->ch;
 }
 
 /*int main()

@@ -43,6 +43,7 @@ struct face
 	equation *equ;
 	edge *e;
   std::vector<int> conflict;
+  int nord;
   face ()
 	{
 		equ=NULL;
@@ -66,7 +67,7 @@ struct edge
 struct vertex
 {
 	point *p;
-	int num;
+	int num, nord;
   vertex ()
 	{
 		p=NULL;
@@ -91,7 +92,7 @@ class ConvexHull
     ConvexHull(int, point*);
 		~ConvexHull();
     void setPoints(int, point*);
-    doublyConnectedEdgeList getConvexHull();
+    doublyConnectedEdgeList getConvexHull(int, point*);
     void clean_up();
 
   protected:
@@ -104,6 +105,8 @@ class ConvexHull
     void conflictTetrahedon();
     int sgn(double);
     void addPoint(int);
+    void eraseEdge(edge*);
+    void eraseFace(face*);
 
     point* p;		
 		int nrPoints;

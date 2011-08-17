@@ -149,10 +149,6 @@ void TestConvexHull::test_computeTetrahedon()
       print (out, ok == true);
       
       this->clean_up();
- /*     delete [] this->p; 
-      this->viz.resize(0);
-      this->ch.v.resize(0);
-      this->ch.f.resize(0);*/
   }
   fclose(in);
   fclose(out);
@@ -222,11 +218,6 @@ void TestConvexHull::test_conflictTetrahedon()
     ff.resize(0);
 
     this->clean_up();
-/*    delete [] this->p;
-    this->viz.resize(0);
-    this->ch.v.resize(0);
-    this->ch.f.resize(0);
-    this->conflictP.resize(0);*/
   }
 
   fclose(in);
