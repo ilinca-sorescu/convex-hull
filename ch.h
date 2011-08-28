@@ -92,7 +92,7 @@ class ConvexHull
     ConvexHull(int, point*);
 		~ConvexHull();
     void setPoints(int, point*);
-    doublyConnectedEdgeList getConvexHull(int, point*);
+    doublyConnectedEdgeList* getConvexHull(int, point*);
     void clean_up();
 
   protected:

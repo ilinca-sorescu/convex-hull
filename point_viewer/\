@@ -1,0 +1,217 @@
+var gl;
+function initGL(canvas) {
+    try {
+        gl = canvas.getContext("experimental-webgl");
+        gl.viewportWidth = canvas.width;
+        gl.viewportHeight = canvas.height;
+    } catch (e) {
+    }
+    if (!gl) {
+        alert("Could not initialise WebGL, sorry :-(");
+    }
+}
+
+
+function getShader(gl, id) {
+    var shaderScript = document.getElementById(id);
+    if (!shaderScript) {
+        return null;
+    }
+
+    var str = "";
+    var k = shaderScript.firstChild;
+    while (k) {
+        if (k.nodeType == 3) {
+            str += k.textContent;
+        }
+        k = k.nextSibling;
+    }
+
+    var shader;
+    if (shaderScript.type == "x-shader/x-fragment") {
+        shader = gl.createShader(gl.FRAGMENT_SHADER);
+    } else if (shaderScript.type == "x-shader/x-vertex") {
+        shader = gl.createShader(gl.VERTEX_SHADER);
+    } else {
+        return null;
+    }
+
+    gl.shaderSource(shader, str);
+    gl.compileShader(shader);
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        alert(gl.getShaderInfoLog(shader));
+        return null;
+    }
+
+    return shader;
+}
+
+
+var shaderProgram;
+
+function initShaders() {
+    var fragmentShader = getShader(gl, "shader-fs");
+    var vertexShader = getShader(gl, "shader-vs");
+
+    shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vertexShader);
+    gl.attachShader(shaderProgram, fragmentShader);
+    gl.linkProgram(shaderProgram);
+
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        alert("Could not initialise shaders");
+    }
+
+    gl.useProgram(shaderProgram);
+
+    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+
+    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+}
+
+
+var mvMatrix = mat4.create();
+var pMatrix = mat4.create();
+
+function setMatrixUniforms() {
+    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
+    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+}
+
+
+
+var triangleVertexPositionBuffer;
+var squareVertexPositionBuffer;
+var points = [];
+function initBuffers() {
+/*    triangleVertexPositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+    var vertices = [
+         0.0,  1.0,  0.0,
+        -1.0, -1.0,  0.0,
+         1.0, -1.0,  0.0
+    ];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    triangleVertexPositionBuffer.itemSize = 3;
+    triangleVertexPositionBuffer.numItems = 3;
+
+    squareVertexPositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
+    vertices = [
+         1.0,  1.0,  0.0,
+        -1.0,  1.0,  0.0,
+         1.0, -1.0,  0.0,
+        -1.0, -1.0,  0.0
+    ];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    squareVertexPositionBuffer.itemSize = 3;
+    squareVertexPositionBuffer.numItems = 4;*/
+}
+function addFace(buffers, coords, i, sgn){
+  var j, k;
+  var verticies = [];
+  for (j=0;j<=3; j++)
+    verticies.push([coords[0], coords[1], coords[2]]);
+
+  for (j=0;j<=3; j++){
+    verticies[j][i] += sgn * draw_eps;
+  }
+    
+  for (j=0;j<=2;j++)
+    if (j!=i){
+      verticies[0][j] += draw_eps;
+      verticies[3][j] -= draw_eps
+    }
+  var cnt = 0;
+  for (j=0;j<=2;j++)
+    if (j!=i){
+      if (!cnt){
+        verticies[1][j] += draw_eps;
+        verticies[2][j] -= draw_eps;
+        cnt++;
+      }
+      else{
+        verticies[1][j] -= draw_eps;
+        verticies[2][j] += draw_eps;
+      }
+    }
+
+  var vec_verticies = []
+  
+  for (j=0;j<=3;j++)
+    for (k=0;k<=2;k++)
+      vec_verticies.push(verticies[j][k]);
+
+  var buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vec_verticies));
+  
+  buffer.numItems = 4;
+  buffer.itemSize = 3;
+  
+
+}
+function addPoint(x, y, z){
+  var coords, i, j;
+  var point;
+  point.buffers = [];
+  point.coords = coords;
+  coords = [x,y,z];
+  for (i=0; i<=2; i++){
+    addFace(point.buffers, coords, i, -1);
+    addFace(point.buffers, coords, i, +1);
+  }
+  points.push(point);
+}
+
+function drawScene() {
+    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+
+    mat4.identity(mvMatrix);
+
+    mat4.translate(mvMatrix, [-1.5, 0.0, -7.0]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    setMatrixUniforms();
+    gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPositionBuffer.numItems);
+
+
+    mat4.translate(mvMatrix, [3.0, 0.0, 0.0]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, squareVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    setMatrixUniforms();
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems);
+}
+
+function handleAddPoint(evt){
+  evt.preventDefault();
+  evt.stopPropagation();
+  var form = $(evt.target).parent('form');
+  var x,y,z;
+  x = parseFloat(form.find('.x').val());
+  y = parseFloat(form.find('.y').val());
+  z = parseFloat(form.find('.z').val());
+  addPoint(x,y,z);
+}
+
+function webGLStart() {
+    var canvas = document.getElementById("canvas");
+    initGL(canvas);
+//    initShaders();
+//    initBuffers();
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.enable(gl.DEPTH_TEST);
+
+  //  drawScene();
+}
+function startup(){
+  $('#add-point-button').click(handleAddPoint);
+
+}

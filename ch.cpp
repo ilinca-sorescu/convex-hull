@@ -113,7 +113,7 @@ void ConvexHull::addFace(edge *e, vertex *v, edge *eprev)
   e->twin->f=newface;
   this->ch.f.push_back(newface);
   newface->nord=this->ch.f.size()-1;
-
+ 
   edge *e1=new edge, *e2=new edge;
   e1->prev=e->twin;
   e2->prev=e1;
@@ -128,12 +128,15 @@ void ConvexHull::addFace(edge *e, vertex *v, edge *eprev)
   e1->origin=e->origin;
   e2->origin=v;
 
-  ++e->twin->origin->num;
+  ++(e->twin->origin->num);
   ++e1->origin->num;
   ++e2->origin->num;
 
   if(eprev != NULL)
+  {
     e1->twin=eprev->twin->prev;
+    eprev->twin->prev->twin=e1;
+  }
 }
 
 void ConvexHull::computeTetrahedon()
@@ -194,6 +197,7 @@ void ConvexHull::computeTetrahedon()
   addFace(e[3], v[4], e[2]);
 
   e[1]->twin->next->twin=e[3]->twin->prev;
+  e[3]->twin->prev->twin=e[1]->twin->next;
 }
 
 inline int ConvexHull::sgn(double v)
@@ -279,8 +283,13 @@ void ConvexHull::eraseFace(face* F)
 
 void ConvexHull::addPoint(int ordP)
 {
+  fprintf(stderr, "Pentru punctul %d %d\n", ordP, this->conflictP[ordP].size());
+
+
   //1.find ordered horizon ----------------------------------------------
-  
+ 
+  if (this->conflictP[ordP].empty()) return; 
+ 
   std::vector<horizon> H, Ho;
   int i, pos;
   double r;
@@ -290,7 +299,8 @@ void ConvexHull::addPoint(int ordP)
 
   for (i=0; i != (int)this->conflictP[ordP].size(); ++i)
   {
-    conflictFace=this->ch.f[conflictP[ordP][i]];
+    conflictFace=this->ch.f[this->conflictP[ordP][i]];
+    if (conflictFace == NULL) continue;
     currentEdge=conflictFace->e;
     do
     {
@@ -298,20 +308,34 @@ void ConvexHull::addPoint(int ordP)
       if (sgn(equ->a*this->p[ordP].x + equ->b*this->p[ordP].y + equ->c*this->p[ordP].z + equ->d) != this->exteriorSgn)
         //currentEdge->twin->f is not visible from point this->p[ordP]
         H.push_back(std::make_pair(currentEdge->twin->origin, std::make_pair(currentEdge->twin, currentEdge->f)));
-      eraseEdge(currentEdge);
       currentEdge=currentEdge->next;
     } while (currentEdge != conflictFace->e);
   }
-  
-  std::sort(H.begin(), H.end());
-  pos=0;
-  do
+ 
+  if (H.size ())
   {
-    Ho.push_back(H[pos]);
-    pos=find(H, Ho[Ho.size()-1].second.first->next->origin);   
-  } while (pos != 0);
+    std::sort(H.begin(), H.end());
+    pos=0;
+    do
+    {
+      Ho.push_back(H[pos]);
+      pos=find(H, Ho[Ho.size()-1].second.first->next->origin);   
+    } while (pos != 0);
+  
+    reverse(Ho.begin(), Ho.end());
+  }
+  else 
+    return;
+  fprintf(stderr,"Nordul nu e ordp deci:\n");
+  for (i=0;i !=(int) this->ch.v.size();i++){
+    fprintf(stderr, "#%d: (%lf %lf %lf)\n", i, this->ch.v[i]->p->x, this->ch.v[i]->p->y, this->ch.v[i]->p->z);
+  }
+  fprintf(stderr,"Orizontul:\n");
+  for (i=0;i != (int)Ho.size();i++)
+    fprintf(stderr, "(%d %d) ", Ho[i].second.first->origin->nord, Ho[i].second.first->next->origin->nord);
+  fprintf(stderr, "\n");
 
-  //2.add faces, create new conflicts -----------------------------------
+  //2.add faces ---------------------------------------------------------
 
   vertex* newvertex=new vertex;
   newvertex->p=&this->p[ordP];
@@ -319,11 +343,7 @@ void ConvexHull::addPoint(int ordP)
   newvertex->nord=this->ch.v.size()-1;
 
   edge* Ei;
-  edge* it;
-  std::set<int> conf;
-  std::vector<int>::iterator c;
-  std::set<int>::iterator setit;
-
+  
   for (i=0; i != (int)Ho.size(); ++i)
   {
     Ei=Ho[i].second.first;
@@ -333,6 +353,21 @@ void ConvexHull::addPoint(int ordP)
       addFace(Ei, newvertex, Ho[i-1].second.first);
     else
       addFace(Ei, newvertex, NULL);
+  }
+  
+  Ho[0].second.first->twin->next->twin=Ho[Ho.size()-1].second.first->twin->prev;
+  Ho[Ho.size()-1].second.first->twin->prev->twin=Ho[0].second.first->twin->next;
+
+ //3.create conflicts---------------------------------------------------
+
+  edge* it;
+  std::set<int> conf;
+  std::vector<int>::iterator c;
+  std::set<int>::iterator setit;
+
+  for (i=0; i != (int)Ho.size(); ++i)
+  {
+    Ei=Ho[i].second.first;
 
     // --- test coplanarity (this->p[ordP] in Ei->f)
     equ=Ei->f->equ;
@@ -364,15 +399,34 @@ void ConvexHull::addPoint(int ordP)
       for (c=Ho[i].second.second->conflict.begin(); c != Ho[i].second.second->conflict.end(); ++c)
         conf.insert(*c);
       for (setit=conf.begin(); setit != conf.end(); ++setit)
+      {
+        if (*setit <= ordP) continue;
+        
+        fprintf (stderr, "(%d %d) %d\n", Ei->origin->nord, Ei->next->origin->nord, *setit);
+
+        //TODO put a condition to adding conflicts
         Ei->twin->f->conflict.push_back(*setit);
+        this->conflictP[*setit].push_back(Ei->twin->f->nord);
+      }
       conf.clear();
     }
-    eraseFace(Ho[i].second.second);
   }
-  Ho[0].second.first->twin->next->twin=Ho[Ho.size()-1].second.first->twin->prev;
 
-  //3.clean up ----------------------------------------------------------
+  //4.clean up ----------------------------------------------------------
   
+  face* currentFace;
+  for (i=0; i != (int)this->conflictP[ordP].size(); ++i)
+  {
+    currentFace=this->ch.f[this->conflictP[ordP][i]];
+    if (currentFace == NULL) continue;
+    currentEdge=currentFace->e;
+    do
+    {
+      currentEdge=currentEdge->next;
+      eraseEdge(currentEdge->prev);
+    } while (currentEdge != currentFace->e);
+    eraseFace(currentFace);
+  }
   this->conflictP[ordP].resize(0);  
 }
 
@@ -381,14 +435,14 @@ void ConvexHull::computeConvexHull()
 	computeTetrahedon();
 	conflictTetrahedon();
 	int i;
-	for(i=1; i <= this->nrPoints; ++i)
+  for(i=1; i <= this->nrPoints; ++i)
 	{
 		if(this->viz[i] == true) continue;
 		addPoint(i);
 	}
 }
 
-doublyConnectedEdgeList ConvexHull::getConvexHull(int n, point* p)
+doublyConnectedEdgeList* ConvexHull::getConvexHull(int n, point* p)
 {
   setPoints(n, p);
   computeConvexHull();
@@ -403,8 +457,6 @@ doublyConnectedEdgeList ConvexHull::getConvexHull(int n, point* p)
   for (i=0; i != (int)this->ch.v.size(); ++i)
     if (this->ch.v[i] != NULL)
       vaux.push_back(this->ch.v[i]);
-  this->ch.f=faux;
-  this->ch.v=vaux;
 
   //reset nord
   for (i=0; i != (int)faux.size(); ++i) 
@@ -412,7 +464,10 @@ doublyConnectedEdgeList ConvexHull::getConvexHull(int n, point* p)
   for (i=0; i != (int)vaux.size(); ++i)
     vaux[i]->nord=i;
 
-  return this->ch;
+  this->ch.f=faux;
+  this->ch.v=vaux;
+  
+  return &this->ch;
 }
 
 /*int main()

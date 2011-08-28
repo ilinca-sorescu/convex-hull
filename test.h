@@ -9,6 +9,7 @@ class TestConvexHull : ConvexHull
     void test_coplanar();
     void test_computeTetrahedon();
     void test_conflictTetrahedon();
+    void test_getConvexHull();
     void run_tests();
 };
 

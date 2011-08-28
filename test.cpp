@@ -226,6 +226,38 @@ void TestConvexHull::test_conflictTetrahedon()
   fprintf (stderr, "--------------\n");
 }
 
+void TestConvexHull::test_getConvexHull()
+{
+  fprintf (stderr, "GetConvexHull:\n");
+
+	FILE *in, *out;
+	int T, i, j;
+
+  doublyConnectedEdgeList *ch;
+	
+  in = fopen("getConvexHull/tests.txt", "r");
+	out = fopen("getConvexHull/log.txt", "w");
+
+  assert (fscanf(in, "%d", &T) != EOF);
+	for (i=1; i <= T; i++)
+	{
+    readPoints(in);
+
+    fprintf(stderr, "#%d:\n", i);
+    fprintf(out, "#%d: ", i);
+  
+    ch=getConvexHull(this->nrPoints, this->p);
+    for (j=0; j != (int)ch->v.size(); ++j)
+      fprintf(stderr, "%lf %lf %lf\n", ch->v[j]->p->x, ch->v[j]->p->y, ch->v[j]->p->z);
+  }
+
+  fclose(in);
+  fclose(out);
+
+  fprintf (stderr, "--------------\n");
+}
+
+
 
 void TestConvexHull::run_tests()
 {
@@ -234,6 +266,7 @@ void TestConvexHull::run_tests()
   t.test_coplanar();
   t.test_computeTetrahedon();
   t.test_conflictTetrahedon();
+  t.test_getConvexHull();
 }
 
 int main()
