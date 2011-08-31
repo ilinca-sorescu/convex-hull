@@ -283,8 +283,27 @@ void ConvexHull::eraseFace(face* F)
 
 void ConvexHull::addPoint(int ordP)
 {
-  fprintf(stderr, "Pentru punctul %d %d\n", ordP, this->conflictP[ordP].size());
-
+/*DEBUG!  
+  printf("for point %d\n", ordP);
+  edge *e;
+  for (int i=0; i != (int)this->ch.f.size(); ++i)
+  {
+    printf("face %d:\n", i);
+    if (this->ch.f[i] == NULL)
+    {
+      printf("inexistent!\n");
+      continue;
+    }
+    e=this->ch.f[i]->e;
+    do
+    {
+      printf ("%d ", e->origin->nord);
+      e=e->next;
+    } while (e != this->ch.f[i]->e);
+    printf ("\n");
+  }
+  printf ("\n\n");
+*/
 
   //1.find ordered horizon ----------------------------------------------
  
@@ -321,19 +340,20 @@ void ConvexHull::addPoint(int ordP)
       Ho.push_back(H[pos]);
       pos=find(H, Ho[Ho.size()-1].second.first->next->origin);   
     } while (pos != 0);
-  
-    reverse(Ho.begin(), Ho.end());
   }
   else 
     return;
-  fprintf(stderr,"Nordul nu e ordp deci:\n");
-  for (i=0;i !=(int) this->ch.v.size();i++){
-    fprintf(stderr, "#%d: (%lf %lf %lf)\n", i, this->ch.v[i]->p->x, this->ch.v[i]->p->y, this->ch.v[i]->p->z);
-  }
-  fprintf(stderr,"Orizontul:\n");
-  for (i=0;i != (int)Ho.size();i++)
-    fprintf(stderr, "(%d %d) ", Ho[i].second.first->origin->nord, Ho[i].second.first->next->origin->nord);
-  fprintf(stderr, "\n");
+  
+/* DEBUG! 
+   printf("conflicts:\n");
+  for (int i=0; i != (int)this->conflictP[ordP].size(); ++i)
+    printf ("%d ", this->conflictP[ordP][i]);
+  printf("\n");
+  printf("horzion:");
+  for (int i=0; i != Ho.size(); ++i)
+    printf("(%d %d) ", Ho[i].first->nord, Ho[i].second.first->next->origin->nord);
+  printf("\n");
+*/
 
   //2.add faces ---------------------------------------------------------
 
@@ -354,11 +374,12 @@ void ConvexHull::addPoint(int ordP)
     else
       addFace(Ei, newvertex, NULL);
   }
-  
+   
   Ho[0].second.first->twin->next->twin=Ho[Ho.size()-1].second.first->twin->prev;
   Ho[Ho.size()-1].second.first->twin->prev->twin=Ho[0].second.first->twin->next;
 
- //3.create conflicts---------------------------------------------------
+ 
+  //3.create conflicts---------------------------------------------------
 
   edge* it;
   std::set<int> conf;
@@ -386,14 +407,17 @@ void ConvexHull::addPoint(int ordP)
       //reset face links
       for (it=Ei->twin->next; it != Ei->next; it=it->next)
         it->f=Ei->f;
+    
+      Ei->f->e=Ei->twin->next;
 
       //delete Ei and Ei->twin
-      eraseEdge(Ei);
       eraseEdge(Ei->twin);
+      eraseEdge(Ei);
     }
     else
     {
       //find new face's conflicts
+      equ=Ei->twin->f->equ;
       for (c=Ei->f->conflict.begin(); c != Ei->f->conflict.end(); ++c)
         conf.insert(*c);
       for (c=Ho[i].second.second->conflict.begin(); c != Ho[i].second.second->conflict.end(); ++c)
@@ -401,10 +425,10 @@ void ConvexHull::addPoint(int ordP)
       for (setit=conf.begin(); setit != conf.end(); ++setit)
       {
         if (*setit <= ordP) continue;
-        
-        fprintf (stderr, "(%d %d) %d\n", Ei->origin->nord, Ei->next->origin->nord, *setit);
 
-        //TODO put a condition to adding conflicts
+        if (sgn(equ->a*this->p[*setit].x + equ->b*this->p[*setit].y + equ->c*this->p[*setit].z + equ->d) != this->exteriorSgn) 
+          continue;
+        
         Ei->twin->f->conflict.push_back(*setit);
         this->conflictP[*setit].push_back(Ei->twin->f->nord);
       }
