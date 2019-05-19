@@ -34,21 +34,21 @@ void TestConvexHull::test_collinear()
 {
   fprintf (stderr, "Collinear:\n");
 
-	FILE *in, *out;
-	int T, i, j;
+  FILE *in, *out;
+  int T, i, j;
   char expectedResult;
   bool result;
   point p[4];
 
-	in = fopen("collinear/tests.txt", "r");
-	out = fopen("collinear/log.txt", "w");
+  in = fopen("collinear/tests.txt", "r");
+  out = fopen("collinear/log.txt", "w");
 
   assert (fscanf(in, "%d", &T) != EOF);
-	for (i=1; i <= T; i++)
-	{
-		
+  for (i=1; i <= T; i++)
+  {
+    
     for (j=1; j <= 3; j++)
-			assert (fscanf(in, "%lf%lf%lf", &p[j].x, &p[j].y, &p[j].z) != EOF);
+      assert (fscanf(in, "%lf%lf%lf", &p[j].x, &p[j].y, &p[j].z) != EOF);
     
     assert (fscanf(in, " %c", &expectedResult) != EOF);
     result=ConvexHull::collinear(p[1], p[2], p[3]);
@@ -66,21 +66,21 @@ void TestConvexHull::test_coplanar()
 {
   fprintf (stderr, "Coplanar:\n");
 
-	FILE *in, *out;
-	int T, i, j;
+  FILE *in, *out;
+  int T, i, j;
   char expectedResult;
   bool result;
   point p[5];
 
-	in = fopen("coplanar/tests.txt", "r");
-	out = fopen("coplanar/log.txt", "w");
+  in = fopen("coplanar/tests.txt", "r");
+  out = fopen("coplanar/log.txt", "w");
 
   assert (fscanf(in, "%d", &T) != EOF);
-	for (i=1; i <= T; i++)
-	{
-		
+  for (i=1; i <= T; i++)
+  {
+    
     for (j=1; j <= 4; j++)
-			assert (fscanf(in, "%lf%lf%lf", &p[j].x, &p[j].y, &p[j].z) != EOF);
+      assert (fscanf(in, "%lf%lf%lf", &p[j].x, &p[j].y, &p[j].z) != EOF);
     
     assert (fscanf(in, " %c", &expectedResult) != EOF);
     result=ConvexHull::coplanar(p[1], p[2], p[3], p[4]);
@@ -98,7 +98,7 @@ inline void TestConvexHull::readPoints(FILE* in)
 {
       int n, j;
       point *p;
-			assert (fscanf(in, "%d", &n) != EOF);
+      assert (fscanf(in, "%d", &n) != EOF);
       p=new point [n+1];
 
       for (j=1; j <= n; ++j)
@@ -110,16 +110,16 @@ void TestConvexHull::test_computeTetrahedon()
 {
   fprintf (stderr, "ComputeTetrahedon:\n");
 
-	FILE *in, *out;
+  FILE *in, *out;
   bool ok;
-	int T, i, j, ord[5], res;
+  int T, i, j, ord[5], res;
 
-	in = fopen("computeTetrahedon/tests.txt", "r");
-	out = fopen("computeTetrahedon/log.txt", "w");
+  in = fopen("computeTetrahedon/tests.txt", "r");
+  out = fopen("computeTetrahedon/log.txt", "w");
 
   assert (fscanf(in, "%d", &T) != EOF);
-	for (i=1; i <= T; i++)
-	{
+  for (i=1; i <= T; i++)
+  {
       fprintf(stderr, "#%d: ", i);
       fprintf(out, "#%d: ", i);
 
@@ -161,19 +161,19 @@ void TestConvexHull::test_conflictTetrahedon()
 {
   fprintf (stderr, "ConflictTetrahedon:\n");
 
-	FILE *in, *out;
-	int T, i, j, k, n, num, pj, fj;
+  FILE *in, *out;
+  int T, i, j, k, n, num, pj, fj;
   bool ok; 
 
   std::vector<int>pp;
   std::vector<int>ff;
-	
+  
   in = fopen("conflictTetrahedon/tests.txt", "r");
-	out = fopen("conflictTetrahedon/log.txt", "w");
+  out = fopen("conflictTetrahedon/log.txt", "w");
 
   assert (fscanf(in, "%d", &T) != EOF);
-	for (i=1; i <= T; i++)
-	{
+  for (i=1; i <= T; i++)
+  {
     readPoints(in);
 
     this->computeTetrahedon();
@@ -230,21 +230,21 @@ void TestConvexHull::test_getConvexHull()
 {
   fprintf (stderr, "GetConvexHull:\n");
 
-	FILE *in, *out;
-	int T, i, j, n;
+  FILE *in, *out;
+  int T, i, j, n;
 
   point P;
 
   bool ok;
 
   doublyConnectedEdgeList *ch;
-	
+  
   in = fopen("getConvexHull/tests.txt", "r");
-	out = fopen("getConvexHull/log.txt", "w");
+  out = fopen("getConvexHull/log.txt", "w");
 
   assert (fscanf(in, "%d", &T) != EOF);
-	for (i=1; i <= T; i++)
-	{
+  for (i=1; i <= T; i++)
+  {
     readPoints(in);
 
     fprintf(stderr, "#%d: ", i);
